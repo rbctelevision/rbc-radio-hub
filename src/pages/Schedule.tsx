@@ -114,7 +114,7 @@ const Schedule = () => {
                 </div>
               ) : (
                 <Tabs defaultValue={todayKey} className="w-full">
-                  <TabsList className="w-full justify-start overflow-x-auto flex-nowrap mb-6">
+                  <TabsList className="w-full justify-start overflow-x-auto flex-nowrap mb-6 hide-scrollbar">
                     {days.map((day) => (
                       <TabsTrigger key={day.key} value={day.key}>
                         <div className="flex items-center justify-between w-full">

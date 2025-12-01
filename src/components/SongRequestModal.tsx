@@ -60,14 +60,25 @@ const SongRequestModal = () => {
 
       return body ?? {};
     },
+    onMutate: (requestId: string) => {
+      // Optimistic feedback: show a success toast immediately and close modal.
+      // If the request ultimately fails, we'll reopen the modal in onError.
+      toast.success("Your request has been submitted and will be played soon.");
+      setOpen(false);
+      return { requestId };
+    },
     onSuccess: (data: any) => {
+      // Show server-provided message when available (may be more descriptive)
       const msg = data?.message || "Song requested successfully!";
       toast.success(msg);
-      setOpen(false);
     },
-    onError: (err: any) => {
+    onError: (err: any, _variables, context) => {
       const message = err?.message || "Failed to request song. Please try again.";
       toast.error(message);
+      // Re-open modal so user can retry if the optimistic success was shown
+      if (context?.requestId) {
+        setOpen(true);
+      }
     },
   });
 
