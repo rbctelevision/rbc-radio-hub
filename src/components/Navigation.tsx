@@ -15,9 +15,6 @@ const Navigation = () => {
               alt="RBC Radio Logo" 
               className="h-12 w-auto"
             />
-            <span className="text-2xl font-black bg-gradient-primary bg-clip-text text-transparent">
-              RBC RADIO
-            </span>
           </NavLink>
 
           {/* Desktop Navigation */}
