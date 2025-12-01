@@ -35,14 +35,36 @@ export const AudioProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const togglePlay = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
+    if (!audioRef.current) return;
+
+    const audio = audioRef.current;
+
+    if (isPlaying) {
+      audio.pause();
+      setIsPlaying(false);
+      return;
     }
+
+    // If resuming from pause, reload the stream so we join the live feed
+    try {
+      // Pause first to reset any current buffer, then reload
+      audio.pause();
+      audio.load();
+    } catch (e) {
+      // ignore load errors
+    }
+
+    const playPromise = audio.play();
+    if (playPromise && typeof playPromise.then === "function") {
+      playPromise
+        .then(() => setIsPlaying(true))
+        .catch(() => {
+          // Play may fail if browser blocks autoplay; leave isPlaying false
+        });
+    } else {
+      setIsPlaying(true);
+    }
+    return;
   };
 
   const setVolume = (newVolume: number[]) => {

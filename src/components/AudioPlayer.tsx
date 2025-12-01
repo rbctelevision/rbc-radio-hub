@@ -14,13 +14,33 @@ const AudioPlayer = () => {
   }, [volume]);
 
   const togglePlay = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
+    if (!audioRef.current) return;
+
+    const audio = audioRef.current;
+
+    if (isPlaying) {
+      audio.pause();
+      setIsPlaying(false);
+      return;
+    }
+
+    // Refresh stream when resuming so the user hears live audio (not buffered)
+    try {
+      audio.pause();
+      audio.load();
+    } catch (e) {
+      // ignore
+    }
+
+    const playPromise = audio.play();
+    if (playPromise && typeof playPromise.then === "function") {
+      playPromise
+        .then(() => setIsPlaying(true))
+        .catch(() => {
+          // play can fail if browser blocks it
+        });
+    } else {
+      setIsPlaying(true);
     }
   };
 
