@@ -3,7 +3,8 @@ import Footer from "@/components/Footer";
 import MiniPlayer from "@/components/MiniPlayer";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, Clock } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ScheduleItem {
@@ -82,6 +83,17 @@ const Schedule = () => {
 
   const todayKey = toDateKey(new Date());
 
+  const tabsListRef = useRef<HTMLDivElement | null>(null);
+  const [showLeft, setShowLeft] = useState(false);
+  const [showRight, setShowRight] = useState(false);
+
+  useEffect(() => {
+    const el = tabsListRef.current;
+    if (!el) return;
+    setShowLeft(el.scrollLeft > 0);
+    setShowRight(el.scrollWidth > el.clientWidth + 1);
+  }, [days]);
+
   return (
     <div className="min-h-screen flex flex-col pb-20">
       <Navigation />
@@ -114,16 +126,51 @@ const Schedule = () => {
                 </div>
               ) : (
                 <Tabs defaultValue={todayKey} className="w-full">
-                  <TabsList className="w-full justify-start overflow-x-auto flex-nowrap mb-6 hide-scrollbar">
-                    {days.map((day) => (
-                      <TabsTrigger key={day.key} value={day.key}>
-                        <div className="flex items-center justify-between w-full">
-                          <span>{day.weekday}</span>
-                          <span className="text-sm text-muted-foreground">({day.label})</span>
-                        </div>
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
+                  <div className="relative mb-6">
+                    {showLeft && (
+                      <button
+                        aria-label="Scroll days left"
+                        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-card/80 hover:bg-card"
+                        onClick={() => {
+                          tabsListRef.current?.scrollBy({ left: -180, behavior: "smooth" });
+                        }}
+                      >
+                        <ChevronLeft size={18} />
+                      </button>
+                    )}
+
+                    <TabsList
+                      ref={tabsListRef}
+                      onScroll={() => {
+                        const el = tabsListRef.current;
+                        if (!el) return;
+                        setShowLeft(el.scrollLeft > 0);
+                        setShowRight(el.scrollWidth - el.clientWidth - el.scrollLeft > 1);
+                      }}
+                      className="w-full justify-start overflow-x-auto flex-nowrap hide-scrollbar px-10"
+                    >
+                      {days.map((day) => (
+                        <TabsTrigger key={day.key} value={day.key}>
+                          <div className="flex items-center justify-between w-full">
+                            <span>{day.weekday}</span>
+                            <span className="text-sm text-muted-foreground">({day.label})</span>
+                          </div>
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+
+                    {showRight && (
+                      <button
+                        aria-label="Scroll days right"
+                        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-card/80 hover:bg-card"
+                        onClick={() => {
+                          tabsListRef.current?.scrollBy({ left: 180, behavior: "smooth" });
+                        }}
+                      >
+                        <ChevronRight size={18} />
+                      </button>
+                    )}
+                  </div>
 
                   {days.map((day) => (
                     <TabsContent key={day.key} value={day.key} className="space-y-4">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { Button } from "./ui/button";
@@ -20,6 +20,7 @@ interface RequestableSong {
 const SongRequestModal = () => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const optimisticRef = useRef(false);
 
   const { data: songs, isLoading } = useQuery<RequestableSong[]>({
     queryKey: ["requestableSongs"],
@@ -61,24 +62,31 @@ const SongRequestModal = () => {
       return body ?? {};
     },
     onMutate: (requestId: string) => {
-      // Optimistic feedback: show a success toast immediately and close modal.
-      // If the request ultimately fails, we'll reopen the modal in onError.
-      toast.success("Your request has been submitted and will be played soon.");
+      // Mark that we showed optimistic confirmation so we can suppress noisy network errors.
+      optimisticRef.current = true;
+      // Show a gentle confirming toast while awaiting result
+      toast.success("Submitting request...");
       setOpen(false);
       return { requestId };
     },
     onSuccess: (data: any) => {
-      // Show server-provided message when available (may be more descriptive)
+      optimisticRef.current = false;
       const msg = data?.message || "Song requested successfully!";
       toast.success(msg);
     },
     onError: (err: any, _variables, context) => {
+      // If we previously showed an optimistic confirmation and the network error is the generic
+      // 'Failed to fetch', suppress that raw message to avoid confusing the user.
+      if (optimisticRef.current && err?.message === "Failed to fetch") {
+        // Re-open modal for a retry, but don't show the noisy error toast
+        optimisticRef.current = false;
+        if (context?.requestId) setOpen(true);
+        return;
+      }
+
       const message = err?.message || "Failed to request song. Please try again.";
       toast.error(message);
-      // Re-open modal so user can retry if the optimistic success was shown
-      if (context?.requestId) {
-        setOpen(true);
-      }
+      if (context?.requestId) setOpen(true);
     },
   });
 
