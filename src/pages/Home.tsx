@@ -5,6 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { useQuery } from "@tanstack/react-query";
 import { useAudio } from "@/contexts/AudioContext";
 import SongRequestModal from "@/components/SongRequestModal";
+import { useSeoMeta } from "@/hooks/useSeoMeta";
 
 interface Song {
   song: {
@@ -22,6 +23,26 @@ interface NowPlayingData {
 
 const Home = () => {
   const { isPlaying, volume, togglePlay, setVolume } = useAudio();
+
+  useSeoMeta({
+    title: "RBC Radio - Live Streaming Radio Station | Music & Shows 24/7",
+    description: "Listen to RBC Radio live for the best music, exclusive shows, and podcasts. Stream your favorite artists and programs 24/7.",
+    canonical: "https://rbctelevision.org/",
+    ogImage: "https://rbctelevision.org/og-image.png",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "RadioStation",
+      "name": "RBC Radio",
+      "url": "https://rbctelevision.org/",
+      "description": "RBC Radio - live streaming radio with music, shows, and podcasts",
+      "logo": "https://rbctelevision.org/og-image.png",
+      "sameAs": ["https://twitter.com/rbc_television"],
+      "potentialAction": {
+        "@type": "ListenAction",
+        "target": "https://rbctelevision.org/"
+      }
+    }
+  });
 
   const { data, isLoading } = useQuery<NowPlayingData>({
     queryKey: ["nowPlaying"],

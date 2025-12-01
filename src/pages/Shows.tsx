@@ -3,6 +3,7 @@ import Footer from "@/components/Footer";
 import MiniPlayer from "@/components/MiniPlayer";
 import { useQuery } from "@tanstack/react-query";
 import { Podcast } from "lucide-react";
+import { useSeoMeta } from "@/hooks/useSeoMeta";
 
 interface Show {
   id: string;
@@ -20,6 +21,24 @@ const Shows = () => {
       const response = await fetch("https://azura.rbctelevision.org/api/station/rbcradio/public/podcasts");
       return response.json();
     },
+  });
+
+  useSeoMeta({
+    title: "RBC Radio Shows & Podcasts - Exclusive Audio Programs",
+    description: "Discover RBC Radio's exclusive collection of shows and podcasts. Listen to your favorite audio programs and exclusive content.",
+    canonical: "https://rbctelevision.org/shows",
+    ogImage: "https://rbctelevision.org/og-image.png",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "RBC Radio Shows & Podcasts",
+      "url": "https://rbctelevision.org/shows",
+      "description": "Browse all RBC Radio shows and podcasts",
+      "isPartOf": {
+        "@type": "BroadcastService",
+        "name": "RBC Radio"
+      }
+    }
   });
 
   const getPodcastArt = (podcastId: string) => {

@@ -6,6 +6,7 @@ import { Calendar, Clock } from "lucide-react";
 import { useMemo, useRef, useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSeoMeta } from "@/hooks/useSeoMeta";
 
 interface ScheduleItem {
   id: number;
@@ -22,6 +23,23 @@ const Schedule = () => {
       const response = await fetch("https://azura.rbctelevision.org/api/station/rbcradio/schedule");
       return response.json();
     },
+  });
+
+  useSeoMeta({
+    title: "RBC Radio Schedule - Music, Shows & Podcasts | 10-Day Planner",
+    description: "Check the RBC Radio 10-day schedule. Browse upcoming shows, music programs, and podcasts. Find what's playing now and coming soon.",
+    canonical: "https://rbctelevision.org/schedule",
+    ogImage: "https://rbctelevision.org/og-image.png",
+    structuredData: {
+      "@context": "https://schema.org",
+      "@type": "BroadcastEvent",
+      "name": "RBC Radio Schedule",
+      "url": "https://rbctelevision.org/schedule",
+      "isPartOf": {
+        "@type": "BroadcastService",
+        "name": "RBC Radio"
+      }
+    }
   });
 
   const formatTime = (timestamp: number) => {
