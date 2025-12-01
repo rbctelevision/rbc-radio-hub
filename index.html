@@ -24,6 +24,47 @@
     <meta name="twitter:site" content="@rbc_television" />
     <meta name="twitter:image" content="/og-image.png" />
     <link rel="image_src" href="/og-image.png" />
+
+    <!-- SEO canonical + keywords -->
+    <link rel="canonical" href="https://rbctelevision.org/" />
+    <meta name="keywords" content="RBC Radio, live radio, streaming radio, radio station, music, shows, podcasts" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Structured data: RadioStation + Organization + SearchAction -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "RadioStation",
+          "@id": "https://rbctelevision.org/#radiostation",
+          "name": "RBC Radio",
+          "url": "https://rbctelevision.org/",
+          "logo": "https://rbctelevision.org/og-image.png",
+          "sameAs": [
+            "https://twitter.com/rbc_television"
+          ]
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://rbctelevision.org/#organization",
+          "name": "RBC Television",
+          "url": "https://rbctelevision.org/",
+          "logo": "https://rbctelevision.org/og-image.png"
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://rbctelevision.org/#website",
+          "url": "https://rbctelevision.org/",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://rbctelevision.org/search?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        }
+      ]
+    }
+    </script>
   </head>
 
   <body>
