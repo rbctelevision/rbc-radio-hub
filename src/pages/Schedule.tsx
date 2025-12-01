@@ -1,5 +1,6 @@
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import MiniPlayer from "@/components/MiniPlayer";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, Clock } from "lucide-react";
 import { useMemo } from "react";
@@ -72,8 +73,9 @@ const Schedule = () => {
   const defaultDay = availableDays.includes(currentDay) ? currentDay : availableDays[0] || 'Monday';
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col pb-20">
       <Navigation />
+      <MiniPlayer />
       
       <main className="flex-1 pt-20">
         <section className="py-16 bg-gradient-radial">
