@@ -24,9 +24,9 @@ const Schedule = () => {
   });
 
   const formatTime = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(timestamp * 1000).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
@@ -34,43 +34,53 @@ const Schedule = () => {
     return new Date(timestamp * 1000).toLocaleDateString([], {
       weekday: 'long',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
-  const getDayName = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleDateString([], { weekday: 'long' });
+  // Helper to build a local YYYY-MM-DD key (avoids timezone issues with toISOString)
+  const toDateKey = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
   };
 
-  const groupedByDay = useMemo(() => {
-    if (!data) return {};
-    
+  // Build an array of the next 10 days (including today)
+  const days = useMemo(() => {
+    const arr: { key: string; date: Date; weekday: string; label: string }[] = [];
+    const today = new Date();
+    for (let i = 0; i < 10; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const key = toDateKey(d);
+      const weekday = d.toLocaleDateString([], { weekday: "long" });
+      const label = d.toLocaleDateString([], { month: "short", day: "numeric" });
+      arr.push({ key, date: d, weekday, label });
+    }
+    return arr;
+  }, []);
+
+  // Group schedule items by exact date key (YYYY-MM-DD)
+  const groupedByDate = useMemo(() => {
     const groups: { [key: string]: ScheduleItem[] } = {};
-    
-    data.forEach(item => {
-      const dayName = getDayName(item.start_timestamp);
-      if (!groups[dayName]) {
-        groups[dayName] = [];
-      }
-      groups[dayName].push(item);
+    if (!data) return groups;
+    data.forEach((item) => {
+      const itemDate = new Date(item.start_timestamp * 1000);
+      const key = toDateKey(itemDate);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(item);
     });
-    
-    // Sort items within each day by start time
-    Object.keys(groups).forEach(day => {
-      groups[day].sort((a, b) => a.start_timestamp - b.start_timestamp);
+
+    // sort within each group
+    Object.keys(groups).forEach((k) => {
+      groups[k].sort((a, b) => a.start_timestamp - b.start_timestamp);
     });
-    
+
     return groups;
   }, [data]);
 
-  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  const availableDays = Object.keys(groupedByDay).sort((a, b) => 
-    daysOfWeek.indexOf(a) - daysOfWeek.indexOf(b)
-  );
-
-  // Get current day or first available day
-  const currentDay = new Date().toLocaleDateString([], { weekday: 'long' });
-  const defaultDay = availableDays.includes(currentDay) ? currentDay : availableDays[0] || 'Monday';
+  const todayKey = toDateKey(new Date());
 
   return (
     <div className="min-h-screen flex flex-col pb-20">
@@ -103,23 +113,22 @@ const Schedule = () => {
                   ))}
                 </div>
               ) : (
-                <Tabs defaultValue={defaultDay} className="w-full">
+                <Tabs defaultValue={todayKey} className="w-full">
                   <TabsList className="w-full justify-start overflow-x-auto flex-nowrap mb-6">
-                    {daysOfWeek.map((day) => (
-                      <TabsTrigger 
-                        key={day} 
-                        value={day}
-                        disabled={!availableDays.includes(day)}
-                      >
-                        {day}
+                    {days.map((day) => (
+                      <TabsTrigger key={day.key} value={day.key}>
+                        <div className="flex items-center justify-between w-full">
+                          <span>{day.weekday}</span>
+                          <span className="text-sm text-muted-foreground">({day.label})</span>
+                        </div>
                       </TabsTrigger>
                     ))}
                   </TabsList>
-                  
-                  {daysOfWeek.map((day) => (
-                    <TabsContent key={day} value={day} className="space-y-4">
-                      {groupedByDay[day] && groupedByDay[day].length > 0 ? (
-                        groupedByDay[day].map((item) => (
+
+                  {days.map((day) => (
+                    <TabsContent key={day.key} value={day.key} className="space-y-4">
+                      {groupedByDate[day.key] && groupedByDate[day.key].length > 0 ? (
+                        groupedByDate[day.key].map((item) => (
                           <div
                             key={item.id}
                             className={`bg-card border rounded-xl p-6 transition-all ${

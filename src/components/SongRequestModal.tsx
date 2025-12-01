@@ -36,15 +36,38 @@ const SongRequestModal = () => {
         `https://azura.rbctelevision.org/api/station/rbcradio/request/${requestId}`,
         { method: "POST" }
       );
-      if (!response.ok) throw new Error("Failed to request song");
-      return response.json();
+
+      // Attempt to parse JSON body (API may return useful message even on non-2xx)
+      let body: any = null;
+      try {
+        body = await response.json();
+      } catch (e) {
+        // ignore JSON parse errors
+      }
+
+      // Prefer server-side success flag/message when available
+      if (body && typeof body.success !== "undefined") {
+        if (!body.success) {
+          throw new Error(body.message || "Failed to request song");
+        }
+        return body;
+      }
+
+      // Fallback to HTTP status
+      if (!response.ok) {
+        throw new Error(body?.message || "Failed to request song");
+      }
+
+      return body ?? {};
     },
-    onSuccess: () => {
-      toast.success("Song requested successfully!");
+    onSuccess: (data: any) => {
+      const msg = data?.message || "Song requested successfully!";
+      toast.success(msg);
       setOpen(false);
     },
-    onError: () => {
-      toast.error("Failed to request song. Please try again.");
+    onError: (err: any) => {
+      const message = err?.message || "Failed to request song. Please try again.";
+      toast.error(message);
     },
   });
 

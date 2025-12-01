@@ -26,10 +26,10 @@ const AudioPlayer = () => {
 
   return (
     <div className="bg-card border border-border rounded-xl p-6 shadow-glow">
-      <audio 
-        ref={audioRef} 
+      <audio
+        ref={audioRef}
         src="https://azura.rbctelevision.org/listen/rbcradio/radio.mp3"
-        preload="none"
+        preload="auto"
       />
       
       <div className="flex items-center gap-4">

@@ -21,6 +21,19 @@ export const AudioProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [volume]);
 
+  // Preload the audio resource on mount so it's ready to play when user clicks.
+  useEffect(() => {
+    if (audioRef.current) {
+      try {
+        audioRef.current.preload = "auto";
+        // call load to make the browser begin fetching metadata/stream
+        audioRef.current.load();
+      } catch (e) {
+        // ignore any load errors (browsers may block fetches until user gesture)
+      }
+    }
+  }, []);
+
   const togglePlay = () => {
     if (audioRef.current) {
       if (isPlaying) {
@@ -38,10 +51,10 @@ export const AudioProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AudioContext.Provider value={{ isPlaying, volume, audioRef, togglePlay, setVolume }}>
-      <audio 
-        ref={audioRef} 
+      <audio
+        ref={audioRef}
         src="https://azura.rbctelevision.org/listen/rbcradio/radio.mp3"
-        preload="none"
+        preload="auto"
       />
       {children}
     </AudioContext.Provider>
