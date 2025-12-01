@@ -1,9 +1,10 @@
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { Play, Pause, Volume2, Music } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { Play, Pause, Volume2, Music, Clock } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { useQuery } from "@tanstack/react-query";
+import { useAudio } from "@/contexts/AudioContext";
+import SongRequestModal from "@/components/SongRequestModal";
 
 interface Song {
   song: {
@@ -16,12 +17,11 @@ interface Song {
 
 interface NowPlayingData {
   now_playing: Song;
+  song_history: Song[];
 }
 
 const Home = () => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState([80]);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const { isPlaying, volume, togglePlay, setVolume } = useAudio();
 
   const { data, isLoading } = useQuery<NowPlayingData>({
     queryKey: ["nowPlaying"],
@@ -31,23 +31,6 @@ const Home = () => {
     },
     refetchInterval: 10000,
   });
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume[0] / 100;
-    }
-  }, [volume]);
-
-  const togglePlay = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
-    }
-  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -68,21 +51,15 @@ const Home = () => {
               </p>
               
               {/* Combined Player and Now Playing */}
-              <div className="max-w-2xl mx-auto">
-                <div className="bg-card border border-border rounded-xl p-6 shadow-glow">
-                  <audio 
-                    ref={audioRef} 
-                    src="https://azura.rbctelevision.org/listen/rbcradio/radio.mp3"
-                    preload="none"
-                  />
-                  
+              <div className="max-w-2xl mx-auto space-y-6">
+                <div className="bg-card border border-border rounded-xl p-4 shadow-glow">
                   {/* Now Playing Info */}
                   {isLoading ? (
-                    <div className="mb-6 animate-pulse">
+                    <div className="mb-4 animate-pulse">
                       <div className="h-6 bg-muted rounded w-1/3 mb-4 mx-auto"></div>
-                      <div className="flex items-center gap-4 justify-center">
+                      <div className="flex items-center gap-3 justify-center">
                         <div className="w-20 h-20 bg-muted rounded-lg"></div>
-                        <div className="flex-1 max-w-xs">
+                        <div className="flex-1 max-w-md">
                           <div className="h-6 bg-muted rounded mb-2"></div>
                           <div className="h-4 bg-muted rounded w-2/3"></div>
                         </div>
@@ -90,20 +67,20 @@ const Home = () => {
                     </div>
                   ) : (
                     data?.now_playing && (
-                      <div className="mb-6">
+                      <div className="mb-4">
                         <div className="flex items-center gap-2 mb-4 justify-center">
                           <Music className="text-primary" size={20} />
                           <h2 className="text-lg font-bold text-primary">Now Playing</h2>
                         </div>
-                        <div className="flex items-center gap-4 justify-center">
+                        <div className="flex items-center gap-3 justify-center">
                           <img
                             src={data.now_playing.song.art}
                             alt="Album Art"
-                            className="w-20 h-20 rounded-lg shadow-lg"
+                            className="w-20 h-20 rounded-lg shadow-lg flex-shrink-0"
                           />
-                          <div className="flex-1 max-w-xs text-left">
-                            <h3 className="text-xl font-bold">{data.now_playing.song.title}</h3>
-                            <p className="text-muted-foreground">{data.now_playing.song.artist}</p>
+                          <div className="flex-1 max-w-md min-w-0">
+                            <h3 className="text-xl font-bold truncate">{data.now_playing.song.title}</h3>
+                            <p className="text-muted-foreground truncate">{data.now_playing.song.artist}</p>
                           </div>
                         </div>
                       </div>
@@ -111,16 +88,16 @@ const Home = () => {
                   )}
                   
                   {/* Player Controls */}
-                  <div className="flex items-center gap-4 justify-center pt-6 border-t border-border">
+                  <div className="flex items-center gap-4 justify-center pt-4 border-t border-border">
                     <button
                       onClick={togglePlay}
-                      className="bg-gradient-primary hover:opacity-90 transition-opacity p-4 rounded-full shadow-lg"
+                      className="bg-gradient-primary hover:opacity-90 transition-opacity p-4 rounded-full shadow-lg flex-shrink-0"
                     >
                       {isPlaying ? <Pause size={32} fill="white" /> : <Play size={32} fill="white" />}
                     </button>
                     
                     <div className="flex items-center gap-3 flex-1 max-w-xs">
-                      <Volume2 className="text-muted-foreground" />
+                      <Volume2 className="text-muted-foreground flex-shrink-0" />
                       <Slider
                         value={volume}
                         onValueChange={setVolume}
@@ -129,6 +106,41 @@ const Home = () => {
                         className="flex-1"
                       />
                     </div>
+                  </div>
+                </div>
+
+                {/* Song Request Button */}
+                <div className="flex justify-center">
+                  <SongRequestModal />
+                </div>
+
+                {/* Song History */}
+                <div className="bg-card border border-border rounded-xl p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Clock className="text-primary" />
+                    <h2 className="text-xl font-bold">Recently Played</h2>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {isLoading ? (
+                      [...Array(5)].map((_, i) => (
+                        <div key={i} className="bg-muted/50 rounded-lg p-3 animate-pulse h-16" />
+                      ))
+                    ) : (
+                      data?.song_history?.slice(0, 5).map((item, index) => (
+                        <div key={index} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                          <img
+                            src={item.song.art}
+                            alt="Album Art"
+                            className="w-12 h-12 rounded flex-shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold truncate">{item.song.title}</p>
+                            <p className="text-sm text-muted-foreground truncate">{item.song.artist}</p>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
