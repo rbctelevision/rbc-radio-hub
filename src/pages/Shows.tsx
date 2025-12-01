@@ -54,9 +54,9 @@ const Shows = () => {
                   </div>
                 ))}
               </div>
-            ) : (
+            ) : data && data.length > 0 ? (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-                {data?.map((show) => (
+                {data.map((show) => (
                   <div
                     key={show.id}
                     className="bg-card border border-border rounded-xl overflow-hidden hover:border-primary hover:shadow-glow transition-all group"
@@ -87,6 +87,12 @@ const Shows = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            ) : (
+              <div className="bg-card border border-border rounded-xl p-12 text-center max-w-2xl mx-auto">
+                <p className="text-muted-foreground text-lg">
+                  No shows available to be displayed.
+                </p>
               </div>
             )}
           </div>

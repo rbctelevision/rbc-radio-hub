@@ -70,9 +70,21 @@ const Footer = () => {
                 href="https://www.roblox.com/communities/16419897/RBC-Television#!/about"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-muted hover:bg-primary transition-colors p-3 rounded-lg text-xl font-bold"
+                className="bg-muted hover:bg-primary transition-colors p-3 rounded-lg inline-flex items-center justify-center"
+                aria-label="Roblox community"
               >
-                R
+                <svg 
+                  className="niftybutton-rbx" 
+                  preserveAspectRatio="xMidYMid meet" 
+                  viewBox="0 0 24 24" 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  style={{ display: 'block', width: '24px', height: '24px' }}
+                  role="img" 
+                  aria-label="Roblox"
+                >
+                  <title>Roblox icon</title>
+                  <path d="M18.926 23.998 0 18.892 5.075.002 24 5.108ZM15.348 10.09l-5.282-1.453-1.414 5.273 5.282 1.453z" fill="currentColor" />
+                </svg>
               </a>
             </div>
           </div>
