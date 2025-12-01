@@ -13,6 +13,15 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        'display': ['Red Hat Display', 'sans-serif'],
+      },
+      fontWeight: {
+        'black': '900',
+        'bold': '700',
+        'semibold': '600',
+        'medium': '500',
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -57,6 +66,13 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+      },
+      backgroundImage: {
+        'gradient-primary': 'var(--gradient-primary)',
+        'gradient-radial': 'var(--gradient-radial)',
+      },
+      boxShadow: {
+        'glow': 'var(--shadow-glow)',
       },
       borderRadius: {
         lg: "var(--radius)",
