@@ -2,3 +2,6 @@ project_id = "zbfqybhucxxfjgihrmpg"
 
 [functions.get-spotify-album-art]
 verify_jwt = false
+
+[functions.get-schedule]
+verify_jwt = false

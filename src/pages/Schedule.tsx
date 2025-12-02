@@ -7,6 +7,7 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ScheduleItem {
   id: number;
@@ -24,15 +25,17 @@ const Schedule = () => {
       const end = new Date(now);
       end.setDate(end.getDate() + 7);
       
-      const startParam = encodeURIComponent(now.toISOString());
-      const endParam = encodeURIComponent(end.toISOString());
+      const { data, error } = await supabase.functions.invoke('get-schedule', {
+        body: { start: now.toISOString(), end: end.toISOString() }
+      });
+
+      if (error) {
+        console.error('Schedule API error:', error);
+        throw error;
+      }
       
-      const response = await fetch(
-        `https://azura.rbctelevision.org/api/station/rbcradio/streamers/schedule?start=${startParam}&end=${endParam}&timeZone=UTC`
-      );
-      const json = await response.json();
-      console.log("Schedule API response:", json);
-      return json;
+      console.log("Schedule API response:", data);
+      return data;
     },
     refetchInterval: 60000, // Refresh every minute
   });
