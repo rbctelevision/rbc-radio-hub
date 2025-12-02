@@ -30,7 +30,7 @@ async function getSpotifyAccessToken(): Promise<string> {
   return data.access_token;
 }
 
-async function searchTrack(accessToken: string, title: string, artist: string): Promise<string | null> {
+async function searchSpotify(accessToken: string, title: string, artist: string): Promise<string | null> {
   const query = encodeURIComponent(`track:${title} artist:${artist}`);
   const response = await fetch(
     `https://api.spotify.com/v1/search?q=${query}&type=track&limit=1`,
@@ -56,6 +56,33 @@ async function searchTrack(accessToken: string, title: string, artist: string): 
   return track.album.images[0].url;
 }
 
+async function searchItunes(title: string, artist: string): Promise<string | null> {
+  try {
+    const query = encodeURIComponent(`${title} ${artist}`);
+    const response = await fetch(
+      `https://itunes.apple.com/search?term=${query}&media=music&limit=1`
+    );
+
+    if (!response.ok) {
+      console.error('iTunes search failed:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const track = data.results?.[0];
+    
+    if (!track?.artworkUrl100) {
+      return null;
+    }
+
+    // Get higher resolution artwork (replace 100x100 with 600x600)
+    return track.artworkUrl100.replace('100x100bb', '600x600bb');
+  } catch (error) {
+    console.error('iTunes search error:', error);
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -73,12 +100,24 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Getting Spotify access token...');
-    const accessToken = await getSpotifyAccessToken();
-    console.log('Access token obtained, searching for track...');
-    
-    const albumArt = await searchTrack(accessToken, title, artist);
-    console.log('Search complete, album art:', albumArt);
+    let albumArt: string | null = null;
+
+    // Try Spotify first
+    try {
+      console.log('Trying Spotify...');
+      const accessToken = await getSpotifyAccessToken();
+      albumArt = await searchSpotify(accessToken, title, artist);
+      console.log('Spotify result:', albumArt);
+    } catch (spotifyError) {
+      console.error('Spotify failed:', spotifyError);
+    }
+
+    // If Spotify failed, try iTunes
+    if (!albumArt) {
+      console.log('Trying iTunes...');
+      albumArt = await searchItunes(title, artist);
+      console.log('iTunes result:', albumArt);
+    }
 
     return new Response(
       JSON.stringify({ albumArt }),
