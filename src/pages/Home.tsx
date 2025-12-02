@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAudio } from "@/contexts/AudioContext";
 import SongRequestModal from "@/components/SongRequestModal";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
+import { useSpotifyAlbumArt } from "@/hooks/useSpotifyAlbumArt";
 
 interface Song {
   song: {
@@ -53,6 +54,12 @@ const Home = () => {
     refetchInterval: 10000,
   });
 
+  const { data: albumArt } = useSpotifyAlbumArt(
+    data?.now_playing?.song?.art || "",
+    data?.now_playing?.song?.title || "",
+    data?.now_playing?.song?.artist || ""
+  );
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navigation />
@@ -95,7 +102,7 @@ const Home = () => {
                         </div>
                         <div className="flex items-center gap-3 justify-center">
                           <img
-                            src={data.now_playing.song.art}
+                            src={albumArt || data.now_playing.song.art}
                             alt="Album Art"
                             className="w-20 h-20 rounded-lg shadow-lg flex-shrink-0"
                           />

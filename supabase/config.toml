@@ -1,1 +1,4 @@
 project_id = "zbfqybhucxxfjgihrmpg"
+
+[functions.get-spotify-album-art]
+verify_jwt = false
