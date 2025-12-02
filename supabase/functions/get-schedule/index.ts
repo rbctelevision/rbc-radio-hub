@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
 
     const response = await fetch(url, {
       headers: {
-        'X-API-Key': apiKey,
+        'Authorization': `Bearer ${apiKey}`,
       },
     });
 

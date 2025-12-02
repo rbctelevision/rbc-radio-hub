@@ -8,17 +8,17 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface ScheduleItem {
   id: number;
-  name: string;
-  start_timestamp: number;
-  end_timestamp: number;
-  is_now: boolean;
+  title: string;
+  start: string;
+  end: string;
 }
 
 const Schedule = () => {
-  const { data, isLoading } = useQuery<ScheduleItem[]>({
+  const { data, isLoading, isError } = useQuery<ScheduleItem[]>({
     queryKey: ["schedule"],
     queryFn: async () => {
       const now = new Date();
@@ -37,8 +37,14 @@ const Schedule = () => {
       console.log("Schedule API response:", data);
       return data;
     },
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 60000,
   });
+
+  useEffect(() => {
+    if (isError) {
+      toast.error("Failed to load schedule. Please try again later.");
+    }
+  }, [isError]);
 
   useSeoMeta({
     title: "RBC Radio Schedule - Music, Shows & Podcasts | 10-Day Planner",
@@ -57,15 +63,15 @@ const Schedule = () => {
     }
   });
 
-  const formatTime = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleTimeString([], {
+  const formatTime = (isoString: string) => {
+    return new Date(isoString).toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
     });
   };
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleDateString([], {
+  const formatDate = (isoString: string) => {
+    return new Date(isoString).toLocaleDateString([], {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
@@ -100,7 +106,7 @@ const Schedule = () => {
     const groups: { [key: string]: ScheduleItem[] } = {};
     if (!data) return groups;
     data.forEach((item) => {
-      const itemDate = new Date(item.start_timestamp * 1000);
+      const itemDate = new Date(item.start);
       const key = toDateKey(itemDate);
       if (!groups[key]) groups[key] = [];
       groups[key].push(item);
@@ -108,7 +114,7 @@ const Schedule = () => {
 
     // sort within each group
     Object.keys(groups).forEach((k) => {
-      groups[k].sort((a, b) => a.start_timestamp - b.start_timestamp);
+      groups[k].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
     });
 
     return groups;
@@ -208,37 +214,44 @@ const Schedule = () => {
                   {days.map((day) => (
                     <TabsContent key={day.key} value={day.key} className="space-y-4">
                       {groupedByDate[day.key] && groupedByDate[day.key].length > 0 ? (
-                        groupedByDate[day.key].map((item) => (
-                          <div
-                            key={item.id}
-                            className={`bg-card border rounded-xl p-6 transition-all ${
-                              item.is_now 
-                                ? 'border-primary shadow-glow scale-105' 
-                                : 'border-border hover:border-primary/50'
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1">
-                                <h3 className="text-2xl font-bold mb-2">{item.name}</h3>
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                  <Clock size={16} />
-                                  <span>
-                                    {formatTime(item.start_timestamp)} - {formatTime(item.end_timestamp)}
-                                  </span>
+                        groupedByDate[day.key].map((item, index) => {
+                          const now = new Date();
+                          const startTime = new Date(item.start);
+                          const endTime = new Date(item.end);
+                          const isNow = now >= startTime && now <= endTime;
+                          
+                          return (
+                            <div
+                              key={`${item.id}-${index}`}
+                              className={`bg-card border rounded-xl p-6 transition-all ${
+                                isNow 
+                                  ? 'border-primary shadow-glow scale-105' 
+                                  : 'border-border hover:border-primary/50'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                  <h3 className="text-2xl font-bold mb-2">{item.title}</h3>
+                                  <div className="flex items-center gap-2 text-muted-foreground">
+                                    <Clock size={16} />
+                                    <span>
+                                      {formatTime(item.start)} - {formatTime(item.end)}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    {formatDate(item.start)}
+                                  </p>
                                 </div>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  {formatDate(item.start_timestamp)}
-                                </p>
+                                
+                                {isNow && (
+                                  <div className="bg-gradient-primary px-4 py-2 rounded-full">
+                                    <span className="text-white font-bold text-sm">ON AIR</span>
+                                  </div>
+                                )}
                               </div>
-                              
-                              {item.is_now && (
-                                <div className="bg-gradient-primary px-4 py-2 rounded-full">
-                                  <span className="text-white font-bold text-sm">ON AIR</span>
-                                </div>
-                              )}
                             </div>
-                          </div>
-                        ))
+                          );
+                        })
                       ) : (
                         <div className="bg-card border border-border rounded-xl p-12 text-center">
                           <p className="text-muted-foreground text-lg">
