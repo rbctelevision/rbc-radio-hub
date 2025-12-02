@@ -7,6 +7,7 @@ import { AudioProvider } from "./contexts/AudioContext";
 import Home from "./pages/Home";
 import Schedule from "./pages/Schedule";
 import Shows from "./pages/Shows";
+import ShowDetail from "./pages/ShowDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
             <Route path="/" element={<Home />} />
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/shows" element={<Shows />} />
+            <Route path="/shows/:showId" element={<ShowDetail />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
