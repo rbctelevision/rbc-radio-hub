@@ -20,7 +20,16 @@ const Schedule = () => {
   const { data, isLoading } = useQuery<ScheduleItem[]>({
     queryKey: ["schedule"],
     queryFn: async () => {
-      const response = await fetch("https://azura.rbctelevision.org/api/station/rbcradio/schedule");
+      const now = new Date();
+      const end = new Date(now);
+      end.setDate(end.getDate() + 7);
+      
+      const startParam = encodeURIComponent(now.toISOString());
+      const endParam = encodeURIComponent(end.toISOString());
+      
+      const response = await fetch(
+        `https://azura.rbctelevision.org/api/station/rbcradio/streamers/schedule?start=${startParam}&end=${endParam}&timeZone=UTC`
+      );
       const json = await response.json();
       console.log("Schedule API response:", json);
       return json;
