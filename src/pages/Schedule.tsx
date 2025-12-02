@@ -219,6 +219,7 @@ const Schedule = () => {
                           const startTime = new Date(item.start);
                           const endTime = new Date(item.end);
                           const isNow = now >= startTime && now <= endTime;
+                          const isPast = now > endTime;
                           
                           return (
                             <div
@@ -226,12 +227,21 @@ const Schedule = () => {
                               className={`bg-card border rounded-xl p-6 transition-all ${
                                 isNow 
                                   ? 'border-primary shadow-glow scale-105' 
-                                  : 'border-border hover:border-primary/50'
+                                  : isPast
+                                    ? 'border-border opacity-50'
+                                    : 'border-border hover:border-primary/50'
                               }`}
                             >
-                              <div className="flex items-start justify-between gap-4">
+                              <div className="flex items-start gap-4">
+                                <img 
+                                  src="https://cdn.therealsy.com/RadioLogoTransparent.png"
+                                  alt="Show cover"
+                                  className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                                />
                                 <div className="flex-1">
-                                  <h3 className="text-2xl font-bold mb-2">{item.title}</h3>
+                                  <h3 className={`text-2xl font-bold mb-2 ${isPast ? 'text-muted-foreground' : ''}`}>
+                                    {item.title}
+                                  </h3>
                                   <div className="flex items-center gap-2 text-muted-foreground">
                                     <Clock size={16} />
                                     <span>
@@ -244,8 +254,13 @@ const Schedule = () => {
                                 </div>
                                 
                                 {isNow && (
-                                  <div className="bg-gradient-primary px-4 py-2 rounded-full">
+                                  <div className="bg-gradient-primary px-4 py-2 rounded-full flex-shrink-0">
                                     <span className="text-white font-bold text-sm">ON AIR</span>
+                                  </div>
+                                )}
+                                {isPast && (
+                                  <div className="bg-muted px-4 py-2 rounded-full flex-shrink-0">
+                                    <span className="text-muted-foreground font-bold text-sm">ENDED</span>
                                   </div>
                                 )}
                               </div>
