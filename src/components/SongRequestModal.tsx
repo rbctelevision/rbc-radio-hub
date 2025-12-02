@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Music, Search } from "lucide-react";
 import { toast } from "sonner";
+import SongRequestItem from "./SongRequestItem";
 
 interface RequestableSong {
   request_id: string;
@@ -128,28 +129,16 @@ const SongRequestModal = () => {
               </div>
             ) : filteredSongs && filteredSongs.length > 0 ? (
               filteredSongs.map((item) => (
-                <div
+                <SongRequestItem
                   key={item.request_id}
-                  className="flex items-center gap-3 p-3 bg-card border border-border rounded-lg hover:border-primary transition-colors"
-                >
-                  <img src={item.song.art} alt="Album Art" className="w-16 h-16 rounded" />
-
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold truncate">{item.song.title}</p>
-                    <p className="text-sm text-muted-foreground truncate">{item.song.artist}</p>
-                    {item.song.album && (
-                      <p className="text-xs text-muted-foreground truncate">{item.song.album}</p>
-                    )}
-                  </div>
-
-                  <Button
-                    onClick={() => requestMutation.mutate(item.request_id)}
-                    disabled={requestMutation.isPending}
-                    size="sm"
-                  >
-                    Request
-                  </Button>
-                </div>
+                  requestId={item.request_id}
+                  title={item.song.title}
+                  artist={item.song.artist}
+                  album={item.song.album}
+                  art={item.song.art}
+                  onRequest={(id) => requestMutation.mutate(id)}
+                  isPending={requestMutation.isPending}
+                />
               ))
             ) : (
               <div className="text-center py-8 text-muted-foreground">
