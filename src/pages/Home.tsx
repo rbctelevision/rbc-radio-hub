@@ -7,6 +7,7 @@ import { useAudio } from "@/contexts/AudioContext";
 import SongRequestModal from "@/components/SongRequestModal";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
 import { useSpotifyAlbumArt } from "@/hooks/useSpotifyAlbumArt";
+import SongHistoryItem from "@/components/SongHistoryItem";
 
 interface Song {
   song: {
@@ -156,17 +157,12 @@ const Home = () => {
                       ))
                     ) : (
                       data?.song_history?.slice(0, 5).map((item, index) => (
-                        <div key={index} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
-                          <img
-                            src={item.song.art}
-                            alt="Album Art"
-                            className="w-12 h-12 rounded flex-shrink-0"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold truncate">{item.song.title}</p>
-                            <p className="text-sm text-muted-foreground truncate">{item.song.artist}</p>
-                          </div>
-                        </div>
+                        <SongHistoryItem
+                          key={index}
+                          title={item.song.title}
+                          artist={item.song.artist}
+                          art={item.song.art}
+                        />
                       ))
                     )}
                   </div>
