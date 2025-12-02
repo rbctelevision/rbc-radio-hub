@@ -2,6 +2,7 @@ import { Play, Pause, Volume2 } from "lucide-react";
 import { Slider } from "./ui/slider";
 import { useAudio } from "@/contexts/AudioContext";
 import { useQuery } from "@tanstack/react-query";
+import { useSpotifyAlbumArt } from "@/hooks/useSpotifyAlbumArt";
 
 interface Song {
   song: {
@@ -27,32 +28,38 @@ const MiniPlayer = () => {
     refetchInterval: 10000,
   });
 
+  const { data: albumArt } = useSpotifyAlbumArt(
+    data?.now_playing?.song?.art || "",
+    data?.now_playing?.song?.title || "",
+    data?.now_playing?.song?.artist || ""
+  );
+
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border shadow-lg z-50">
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center gap-4 max-w-4xl mx-auto">
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex items-center gap-4 max-w-5xl mx-auto">
           <button
             onClick={togglePlay}
-            className="bg-gradient-primary hover:opacity-90 transition-opacity p-3 rounded-full shadow-lg flex-shrink-0"
+            className="bg-gradient-primary hover:opacity-90 transition-opacity p-4 rounded-full shadow-lg flex-shrink-0"
           >
-            {isPlaying ? <Pause size={20} fill="white" /> : <Play size={20} fill="white" />}
+            {isPlaying ? <Pause size={24} fill="white" /> : <Play size={24} fill="white" />}
           </button>
           
           {data?.now_playing && (
-            <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="flex items-center gap-4 flex-1 min-w-0">
               <img
-                src={data.now_playing.song.art}
+                src={albumArt || data.now_playing.song.art}
                 alt="Album Art"
-                className="w-12 h-12 rounded shadow-lg flex-shrink-0"
+                className="w-16 h-16 rounded shadow-lg flex-shrink-0"
               />
               <div className="flex-1 min-w-0">
-                <p className="font-semibold truncate text-sm">{data.now_playing.song.title}</p>
-                <p className="text-xs text-muted-foreground truncate">{data.now_playing.song.artist}</p>
+                <p className="font-bold truncate text-base">{data.now_playing.song.title}</p>
+                <p className="text-sm text-muted-foreground truncate">{data.now_playing.song.artist}</p>
               </div>
             </div>
           )}
           
-          <div className="flex items-center gap-3 flex-shrink-0 w-32">
+          <div className="flex items-center gap-3 flex-shrink-0 w-48">
             <Volume2 className="text-muted-foreground flex-shrink-0" size={20} />
             <Slider
               value={volume}

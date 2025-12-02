@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import MiniPlayer from "@/components/MiniPlayer";
+import CustomAudioPlayer from "@/components/CustomAudioPlayer";
 import { ArrowLeft, Calendar, Clock } from "lucide-react";
 import {
   Collapsible,
@@ -62,9 +63,13 @@ const ShowDetail = () => {
   };
 
   const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    
+    if (hrs > 0) {
+      return `${hrs}:${mins.toString().padStart(2, "0")}`;
+    }
+    return `${mins}:00`;
   };
 
   const formatDate = (timestamp: number) => {
@@ -230,10 +235,10 @@ const EpisodeItem = ({ episode, showId, formatDate, formatDuration }: EpisodeIte
         <div className="px-6 pb-6 border-t border-border pt-4">
           <p className="text-muted-foreground mb-4">{episode.description}</p>
           {episodeDetail && (
-            <audio controls className="w-full">
-              <source src={episode.media.path} type="audio/mpeg" />
-              Your browser does not support the audio element.
-            </audio>
+            <CustomAudioPlayer 
+              src={episode.media.path}
+              duration={episode.media.length}
+            />
           )}
         </div>
       </CollapsibleContent>
