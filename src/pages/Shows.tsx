@@ -4,6 +4,7 @@ import MiniPlayer from "@/components/MiniPlayer";
 import { useQuery } from "@tanstack/react-query";
 import { Podcast } from "lucide-react";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
+import { useNavigate } from "react-router-dom";
 
 interface Show {
   id: string;
@@ -15,6 +16,7 @@ interface Show {
 }
 
 const Shows = () => {
+  const navigate = useNavigate();
   const { data, isLoading } = useQuery<Show[]>({
     queryKey: ["shows"],
     queryFn: async () => {
@@ -80,7 +82,8 @@ const Shows = () => {
                 {data.map((show) => (
                   <div
                     key={show.id}
-                    className="bg-card border border-border rounded-xl overflow-hidden hover:border-primary hover:shadow-glow transition-all group"
+                    onClick={() => navigate(`/shows/${show.id}`)}
+                    className="bg-card border border-border rounded-xl overflow-hidden hover:border-primary hover:shadow-glow transition-all group cursor-pointer"
                   >
                     <div className="aspect-square overflow-hidden bg-muted">
                       {show.has_custom_art ? (
