@@ -21,8 +21,11 @@ const Schedule = () => {
     queryKey: ["schedule"],
     queryFn: async () => {
       const response = await fetch("https://azura.rbctelevision.org/api/station/rbcradio/schedule");
-      return response.json();
+      const json = await response.json();
+      console.log("Schedule API response:", json);
+      return json;
     },
+    refetchInterval: 60000, // Refresh every minute
   });
 
   useSeoMeta({
@@ -65,20 +68,30 @@ const Schedule = () => {
     return `${y}-${m}-${day}`;
   };
 
-  // Build an array of the next 10 days (including today)
+  // Build days array based on actual data from API
   const days = useMemo(() => {
+    if (!data) return [];
+    
+    // Get all unique dates from the API data
+    const dateSet = new Set<string>();
+    data.forEach((item) => {
+      const itemDate = new Date(item.start_timestamp * 1000);
+      const key = toDateKey(itemDate);
+      dateSet.add(key);
+    });
+    
+    // Convert to sorted array of date objects
     const arr: { key: string; date: Date; weekday: string; label: string }[] = [];
-    const today = new Date();
-    for (let i = 0; i < 10; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      const key = toDateKey(d);
-      const weekday = d.toLocaleDateString([], { weekday: "long" });
-      const label = d.toLocaleDateString([], { month: "short", day: "numeric" });
-      arr.push({ key, date: d, weekday, label });
-    }
+    Array.from(dateSet).sort().forEach((key) => {
+      const [y, m, d] = key.split("-").map(Number);
+      const date = new Date(y, m - 1, d);
+      const weekday = date.toLocaleDateString([], { weekday: "long" });
+      const label = date.toLocaleDateString([], { month: "short", day: "numeric" });
+      arr.push({ key, date, weekday, label });
+    });
+    
     return arr;
-  }, []);
+  }, [data]);
 
   // Group schedule items by exact date key (YYYY-MM-DD)
   const groupedByDate = useMemo(() => {

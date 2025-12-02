@@ -63,16 +63,22 @@ Deno.serve(async (req) => {
 
   try {
     const { title, artist } = await req.json();
+    console.log('Edge function called with:', { title, artist });
 
     if (!title || !artist) {
+      console.error('Missing title or artist');
       return new Response(
         JSON.stringify({ error: 'Title and artist are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    console.log('Getting Spotify access token...');
     const accessToken = await getSpotifyAccessToken();
+    console.log('Access token obtained, searching for track...');
+    
     const albumArt = await searchTrack(accessToken, title, artist);
+    console.log('Search complete, album art:', albumArt);
 
     return new Response(
       JSON.stringify({ albumArt }),
