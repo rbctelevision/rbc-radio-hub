@@ -59,25 +59,8 @@ const ShowDetail = () => {
     },
   });
 
-  const getPodcastArt = async (podcastId: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke('get-podcast-asset', {
-        body: { type: 'art', podcastId }
-      });
-      if (error || !data?.url) {
-        return `https://azura.rbctelevision.org/api/station/rbcradio/podcast/${podcastId}/art`;
-      }
-      return data.url;
-    } catch {
-      return `https://azura.rbctelevision.org/api/station/rbcradio/podcast/${podcastId}/art`;
-    }
-  };
-
-  const { data: podcastArtUrl } = useQuery({
-    queryKey: ["podcastArt", showId],
-    queryFn: () => getPodcastArt(showId!),
-    enabled: !!showId && !!show?.has_custom_art,
-  });
+  // Podcast art endpoint is public - use direct URL
+  const podcastArtUrl = showId ? `https://azura.rbctelevision.org/api/station/rbcradio/podcast/${showId}/art` : null;
 
   const formatDuration = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
