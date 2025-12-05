@@ -1,6 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
 import { Podcast } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Show {
   id: string;
@@ -17,23 +15,8 @@ interface ShowCardProps {
 }
 
 const ShowCard = ({ show, onClick }: ShowCardProps) => {
-  const { data: artUrl } = useQuery({
-    queryKey: ["podcastArt", show.id],
-    queryFn: async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('get-podcast-asset', {
-          body: { type: 'art', podcastId: show.id }
-        });
-        if (error || !data?.url) {
-          return `https://azura.rbctelevision.org/api/station/rbcradio/podcast/${show.id}/art`;
-        }
-        return data.url;
-      } catch {
-        return `https://azura.rbctelevision.org/api/station/rbcradio/podcast/${show.id}/art`;
-      }
-    },
-    enabled: show.has_custom_art,
-  });
+  // Podcast art endpoint is public - use direct URL
+  const artUrl = `https://azura.rbctelevision.org/api/station/rbcradio/podcast/${show.id}/art`;
 
   return (
     <div
@@ -41,7 +24,7 @@ const ShowCard = ({ show, onClick }: ShowCardProps) => {
       className="bg-card border border-border rounded-xl overflow-hidden hover:border-primary hover:shadow-glow transition-all group cursor-pointer"
     >
       <div className="aspect-square overflow-hidden bg-muted">
-        {show.has_custom_art && artUrl ? (
+        {show.has_custom_art ? (
           <img
             src={artUrl}
             alt={show.title}
