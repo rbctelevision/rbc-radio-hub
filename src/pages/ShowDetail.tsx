@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/collapsible";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Episode {
   id: string;
@@ -58,9 +59,25 @@ const ShowDetail = () => {
     },
   });
 
-  const getPodcastArt = (podcastId: string) => {
-    return `https://azura.rbctelevision.org/api/station/rbcradio/podcast/${podcastId}/art`;
+  const getPodcastArt = async (podcastId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-podcast-asset', {
+        body: { type: 'art', podcastId }
+      });
+      if (error || !data?.url) {
+        return `https://azura.rbctelevision.org/api/station/rbcradio/podcast/${podcastId}/art`;
+      }
+      return data.url;
+    } catch {
+      return `https://azura.rbctelevision.org/api/station/rbcradio/podcast/${podcastId}/art`;
+    }
   };
+
+  const { data: podcastArtUrl } = useQuery({
+    queryKey: ["podcastArt", showId],
+    queryFn: () => getPodcastArt(showId!),
+    enabled: !!showId && !!show?.has_custom_art,
+  });
 
   const formatDuration = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
@@ -108,9 +125,9 @@ const ShowDetail = () => {
                   <div className="bg-card border border-border rounded-xl overflow-hidden mb-8">
                     <div className="md:flex">
                       <div className="md:w-1/3 aspect-square bg-muted">
-                        {show.has_custom_art ? (
+                        {show.has_custom_art && podcastArtUrl ? (
                           <img
-                            src={getPodcastArt(show.id)}
+                            src={podcastArtUrl}
                             alt={show.title}
                             className="w-full h-full object-cover"
                           />
@@ -194,10 +211,11 @@ const EpisodeItem = ({ episode, showId, formatDate, formatDuration }: EpisodeIte
   const { data: episodeDetail } = useQuery({
     queryKey: ["episode", showId, episode.id],
     queryFn: async () => {
-      const response = await fetch(
-        `https://azura.rbctelevision.org/api/station/rbcradio/public/podcast/${showId}/episode/${episode.id}`
-      );
-      return response.json();
+      const { data, error } = await supabase.functions.invoke('get-podcast-asset', {
+        body: { type: 'episode', podcastId: showId, episodeId: episode.id }
+      });
+      if (error) throw error;
+      return data;
     },
     enabled: isOpen,
   });
