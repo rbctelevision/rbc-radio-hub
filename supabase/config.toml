@@ -1,5 +1,8 @@
 project_id = "zbfqybhucxxfjgihrmpg"
 
+[functions.get-podcast-asset]
+verify_jwt = false
+
 [functions.get-spotify-album-art]
 verify_jwt = false
 

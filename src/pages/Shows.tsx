@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Podcast } from "lucide-react";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
 import { useNavigate } from "react-router-dom";
+import ShowCard from "@/components/ShowCard";
 
 interface Show {
   id: string;
@@ -43,10 +44,6 @@ const Shows = () => {
     }
   });
 
-  const getPodcastArt = (podcastId: string) => {
-    return `https://azura.rbctelevision.org/api/station/rbcradio/podcast/${podcastId}/art`;
-  };
-
   return (
     <div className="min-h-screen flex flex-col pb-20">
       <Navigation />
@@ -80,36 +77,11 @@ const Shows = () => {
             ) : data && data.length > 0 ? (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
                 {data.map((show) => (
-                  <div
+                  <ShowCard
                     key={show.id}
+                    show={show}
                     onClick={() => navigate(`/shows/${show.id}`)}
-                    className="bg-card border border-border rounded-xl overflow-hidden hover:border-primary hover:shadow-glow transition-all group cursor-pointer"
-                  >
-                    <div className="aspect-square overflow-hidden bg-muted">
-                      {show.has_custom_art ? (
-                        <img
-                          src={getPodcastArt(show.id)}
-                          alt={show.title}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-primary">
-                          <Podcast size={64} className="text-white" />
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="p-6">
-                      <h3 className="text-xl font-bold mb-2">{show.title}</h3>
-                      <p className="text-muted-foreground mb-3 line-clamp-2">
-                        {show.description}
-                      </p>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">{show.author}</span>
-                        <span className="text-primary font-semibold uppercase">{show.language}</span>
-                      </div>
-                    </div>
-                  </div>
+                  />
                 ))}
               </div>
             ) : (

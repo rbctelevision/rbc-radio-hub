@@ -2,7 +2,8 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import MiniPlayer from "@/components/MiniPlayer";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, Clock } from "lucide-react";
+import { Calendar, Clock, Radio, User } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useMemo, useRef, useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,18 +16,25 @@ interface ScheduleItem {
   title: string;
   start: string;
   end: string;
+  streamer_id?: number;
+  streamer_name?: string;
 }
 
 const Schedule = () => {
+  const navigate = useNavigate();
   const { data, isLoading, isError } = useQuery<ScheduleItem[]>({
     queryKey: ["schedule"],
     queryFn: async () => {
+      // Start from beginning of today to include past shows
       const now = new Date();
-      const end = new Date(now);
+      const startOfDay = new Date(now);
+      startOfDay.setHours(0, 0, 0, 0);
+      
+      const end = new Date(startOfDay);
       end.setDate(end.getDate() + 7);
       
       const { data, error } = await supabase.functions.invoke('get-schedule', {
-        body: { start: now.toISOString(), end: end.toISOString() }
+        body: { start: startOfDay.toISOString(), end: end.toISOString() }
       });
 
       if (error) {
@@ -224,7 +232,10 @@ const Schedule = () => {
                           return (
                             <div
                               key={`${item.id}-${index}`}
+                              onClick={() => item.streamer_id && navigate(`/shows/${item.streamer_id}`)}
                               className={`bg-card border rounded-xl p-6 transition-all ${
+                                item.streamer_id ? 'cursor-pointer' : ''
+                              } ${
                                 isNow 
                                   ? 'border-primary shadow-glow scale-105' 
                                   : isPast
@@ -242,6 +253,12 @@ const Schedule = () => {
                                   <h3 className={`text-2xl font-bold mb-2 ${isPast ? 'text-muted-foreground' : ''}`}>
                                     {item.title}
                                   </h3>
+                                  {item.streamer_name && (
+                                    <div className="flex items-center gap-2 text-primary mb-2">
+                                      <User size={16} />
+                                      <span className="font-semibold">{item.streamer_name}</span>
+                                    </div>
+                                  )}
                                   <div className="flex items-center gap-2 text-muted-foreground">
                                     <Clock size={16} />
                                     <span>
@@ -254,8 +271,9 @@ const Schedule = () => {
                                 </div>
                                 
                                 {isNow && (
-                                  <div className="bg-gradient-primary px-4 py-2 rounded-full flex-shrink-0">
-                                    <span className="text-white font-bold text-sm">ON AIR</span>
+                                  <div className="bg-gradient-primary px-4 py-2 rounded-full flex-shrink-0 flex items-center gap-2">
+                                    <Radio size={16} className="text-white animate-pulse" />
+                                    <span className="text-white font-bold text-sm">Live on Air</span>
                                   </div>
                                 )}
                                 {isPast && (
