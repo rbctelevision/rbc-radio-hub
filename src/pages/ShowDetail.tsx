@@ -235,9 +235,9 @@ const EpisodeItem = ({ episode, showId, formatDate, formatDuration }: EpisodeIte
       <CollapsibleContent>
         <div className="px-6 pb-6 border-t border-border pt-4">
           <p className="text-muted-foreground mb-4">{episode.description}</p>
-          {episodeDetail?.media?.links?.download && (
+          {episodeDetail?.links?.download && (
             <CustomAudioPlayer 
-              src={episodeDetail.media.links.download}
+              src={episodeDetail.links.download}
               duration={episodeDetail.media?.length || episode.media.length}
             />
           )}
