@@ -113,7 +113,7 @@ const Footer = () => {
         </div>
         
         <div className="mt-8 pt-8 border-t border-border text-center text-muted-foreground">
-          <p>&copy; 2025 RBC Television. All rights reserved.</p>
+          <p>&copy; 2026 RBC Television. All rights reserved.</p>
         </div>
       </div>
     </footer>
