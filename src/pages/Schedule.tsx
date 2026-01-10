@@ -48,6 +48,13 @@ const Schedule = () => {
     refetchInterval: 60000,
   });
 
+  // Force re-render every 30 seconds to update "Live on Air" status
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     if (isError) {
       toast.error("Failed to load schedule. Please try again later.");

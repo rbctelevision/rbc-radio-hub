@@ -4,7 +4,7 @@ import { Play, Pause, Volume2, Music, Clock } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { useQuery } from "@tanstack/react-query";
 import { useAudio } from "@/contexts/AudioContext";
-import SongRequestModal from "@/components/SongRequestModal";
+import RequestModal from "@/components/RequestModal";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
 import { useSpotifyAlbumArt } from "@/hooks/useSpotifyAlbumArt";
 import SongHistoryItem from "@/components/SongHistoryItem";
@@ -138,9 +138,9 @@ const Home = () => {
                   </div>
                 </div>
 
-                {/* Song Request Button */}
+                {/* Request Button */}
                 <div className="flex justify-center">
-                  <SongRequestModal />
+                  <RequestModal />
                 </div>
 
                 {/* Song History */}
