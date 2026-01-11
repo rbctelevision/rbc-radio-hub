@@ -1,5 +1,6 @@
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { Play, Pause, Volume2, Music, Clock } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { useQuery } from "@tanstack/react-query";
@@ -66,6 +67,11 @@ const Home = () => {
       <Navigation />
       
       <main className="flex-1 pt-20">
+        {/* Announcement Banner */}
+        <div className="container mx-auto px-4 pt-4">
+          <AnnouncementBanner />
+        </div>
+
         {/* Hero Section */}
         <section className="relative overflow-hidden py-20 bg-gradient-radial">
           <div className="container mx-auto px-4">

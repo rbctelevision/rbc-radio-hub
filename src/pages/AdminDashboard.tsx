@@ -12,7 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, LogOut, Shield, Ban, RefreshCw, AlertCircle, CheckCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Loader2, LogOut, Shield, Ban, RefreshCw, AlertCircle, CheckCircle, Megaphone, Plus, Trash2, Edit } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -33,6 +35,17 @@ interface BannedIP {
   created_at: string;
 }
 
+interface Announcement {
+  id: string;
+  title: string;
+  message: string;
+  type: "info" | "warning" | "success" | "error";
+  is_active: boolean;
+  starts_at: string | null;
+  ends_at: string | null;
+  created_at: string;
+}
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { user, isAdmin, isLoading: authLoading, signOut } = useAuth();
@@ -40,12 +53,23 @@ const AdminDashboard = () => {
   
   const [requestLogs, setRequestLogs] = useState<RequestLog[]>([]);
   const [bannedIPs, setBannedIPs] = useState<BannedIP[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isLoadingLogs, setIsLoadingLogs] = useState(true);
   const [isLoadingBanned, setIsLoadingBanned] = useState(true);
+  const [isLoadingAnnouncements, setIsLoadingAnnouncements] = useState(true);
   const [banDialogOpen, setBanDialogOpen] = useState(false);
+  const [announcementDialogOpen, setAnnouncementDialogOpen] = useState(false);
+  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
   const [selectedIP, setSelectedIP] = useState("");
   const [banReason, setBanReason] = useState("");
   const [isBanning, setIsBanning] = useState(false);
+  const [isSavingAnnouncement, setIsSavingAnnouncement] = useState(false);
+  
+  // Announcement form state
+  const [announcementTitle, setAnnouncementTitle] = useState("");
+  const [announcementMessage, setAnnouncementMessage] = useState("");
+  const [announcementType, setAnnouncementType] = useState<"info" | "warning" | "success" | "error">("info");
+  const [announcementActive, setAnnouncementActive] = useState(true);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -98,10 +122,33 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchAnnouncements = async () => {
+    setIsLoadingAnnouncements(true);
+    try {
+      const { data, error } = await supabase
+        .from("announcements")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setAnnouncements((data || []) as Announcement[]);
+    } catch (err) {
+      console.error("Error fetching announcements:", err);
+      toast({
+        title: "Error",
+        description: "Failed to fetch announcements",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingAnnouncements(false);
+    }
+  };
+
   useEffect(() => {
     if (user && isAdmin) {
       fetchRequestLogs();
       fetchBannedIPs();
+      fetchAnnouncements();
     }
   }, [user, isAdmin]);
 
@@ -188,6 +235,131 @@ const AdminDashboard = () => {
     return bannedIPs.some(banned => banned.ip_address === ip);
   };
 
+  const resetAnnouncementForm = () => {
+    setAnnouncementTitle("");
+    setAnnouncementMessage("");
+    setAnnouncementType("info");
+    setAnnouncementActive(true);
+    setEditingAnnouncement(null);
+  };
+
+  const handleOpenAnnouncementDialog = (announcement?: Announcement) => {
+    if (announcement) {
+      setEditingAnnouncement(announcement);
+      setAnnouncementTitle(announcement.title);
+      setAnnouncementMessage(announcement.message);
+      setAnnouncementType(announcement.type);
+      setAnnouncementActive(announcement.is_active);
+    } else {
+      resetAnnouncementForm();
+    }
+    setAnnouncementDialogOpen(true);
+  };
+
+  const handleSaveAnnouncement = async () => {
+    if (!announcementTitle.trim() || !announcementMessage.trim()) return;
+
+    setIsSavingAnnouncement(true);
+    try {
+      if (editingAnnouncement) {
+        const { error } = await supabase
+          .from("announcements")
+          .update({
+            title: announcementTitle.trim(),
+            message: announcementMessage.trim(),
+            type: announcementType,
+            is_active: announcementActive,
+          })
+          .eq("id", editingAnnouncement.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Announcement Updated",
+          description: "The announcement has been updated successfully",
+        });
+      } else {
+        const { error } = await supabase
+          .from("announcements")
+          .insert({
+            title: announcementTitle.trim(),
+            message: announcementMessage.trim(),
+            type: announcementType,
+            is_active: announcementActive,
+            created_by: user?.id,
+          });
+
+        if (error) throw error;
+
+        toast({
+          title: "Announcement Created",
+          description: "The announcement has been created successfully",
+        });
+      }
+
+      setAnnouncementDialogOpen(false);
+      resetAnnouncementForm();
+      fetchAnnouncements();
+    } catch (err) {
+      console.error("Error saving announcement:", err);
+      toast({
+        title: "Error",
+        description: "Failed to save announcement",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingAnnouncement(false);
+    }
+  };
+
+  const handleDeleteAnnouncement = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("announcements")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Announcement Deleted",
+        description: "The announcement has been deleted successfully",
+      });
+      fetchAnnouncements();
+    } catch (err) {
+      console.error("Error deleting announcement:", err);
+      toast({
+        title: "Error",
+        description: "Failed to delete announcement",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleToggleAnnouncementActive = async (id: string, isActive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("announcements")
+        .update({ is_active: !isActive })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: isActive ? "Announcement Disabled" : "Announcement Enabled",
+        description: `The announcement is now ${isActive ? "hidden" : "visible"}`,
+      });
+      fetchAnnouncements();
+    } catch (err) {
+      console.error("Error toggling announcement:", err);
+      toast({
+        title: "Error",
+        description: "Failed to update announcement",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getRequestTypeBadge = (type: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive"> = {
       song: "default",
@@ -234,6 +406,10 @@ const AdminDashboard = () => {
           <TabsList>
             <TabsTrigger value="logs">Request Logs</TabsTrigger>
             <TabsTrigger value="banned">Banned IPs</TabsTrigger>
+            <TabsTrigger value="announcements">
+              <Megaphone className="h-4 w-4 mr-2" />
+              Announcements
+            </TabsTrigger>
           </TabsList>
 
           {/* Request Logs Tab */}
@@ -438,6 +614,193 @@ const AdminDashboard = () => {
                               >
                                 Unban
                               </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Announcements Tab */}
+          <TabsContent value="announcements" className="space-y-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Announcements</CardTitle>
+                  <CardDescription>
+                    Manage announcement banners displayed on the site
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Dialog open={announcementDialogOpen} onOpenChange={(open) => {
+                    setAnnouncementDialogOpen(open);
+                    if (!open) resetAnnouncementForm();
+                  }}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" onClick={() => handleOpenAnnouncementDialog()}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        New Announcement
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>
+                          {editingAnnouncement ? "Edit Announcement" : "New Announcement"}
+                        </DialogTitle>
+                        <DialogDescription>
+                          {editingAnnouncement 
+                            ? "Update the announcement details below" 
+                            : "Create a new announcement to display on the site"}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="title">Title</Label>
+                          <Input
+                            id="title"
+                            placeholder="Announcement title"
+                            value={announcementTitle}
+                            onChange={(e) => setAnnouncementTitle(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="message">Message</Label>
+                          <Textarea
+                            id="message"
+                            placeholder="Announcement message..."
+                            value={announcementMessage}
+                            onChange={(e) => setAnnouncementMessage(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="type">Type</Label>
+                          <Select value={announcementType} onValueChange={(v) => setAnnouncementType(v as typeof announcementType)}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="info">Info (Blue)</SelectItem>
+                              <SelectItem value="success">Success (Green)</SelectItem>
+                              <SelectItem value="warning">Warning (Yellow)</SelectItem>
+                              <SelectItem value="error">Error (Red)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="active">Active</Label>
+                          <Switch
+                            id="active"
+                            checked={announcementActive}
+                            onCheckedChange={setAnnouncementActive}
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setAnnouncementDialogOpen(false);
+                            resetAnnouncementForm();
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={handleSaveAnnouncement}
+                          disabled={!announcementTitle.trim() || !announcementMessage.trim() || isSavingAnnouncement}
+                        >
+                          {isSavingAnnouncement ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Saving...
+                            </>
+                          ) : editingAnnouncement ? (
+                            "Update"
+                          ) : (
+                            "Create"
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={fetchAnnouncements}
+                    disabled={isLoadingAnnouncements}
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingAnnouncements ? "animate-spin" : ""}`} />
+                    Refresh
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isLoadingAnnouncements ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : announcements.length === 0 ? (
+                  <Alert>
+                    <Megaphone className="h-4 w-4" />
+                    <AlertDescription>No announcements yet. Create one to get started.</AlertDescription>
+                  </Alert>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Message</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Created</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {announcements.map((announcement) => (
+                          <TableRow key={announcement.id}>
+                            <TableCell className="font-medium">{announcement.title}</TableCell>
+                            <TableCell className="max-w-xs truncate">{announcement.message}</TableCell>
+                            <TableCell>
+                              <Badge variant={
+                                announcement.type === "error" ? "destructive" :
+                                announcement.type === "warning" ? "secondary" :
+                                "default"
+                              }>
+                                {announcement.type}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Switch
+                                checked={announcement.is_active}
+                                onCheckedChange={() => handleToggleAnnouncementActive(announcement.id, announcement.is_active)}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              {format(new Date(announcement.created_at), "MMM d, HH:mm")}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleOpenAnnouncementDialog(announcement)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteAnnouncement(announcement.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
