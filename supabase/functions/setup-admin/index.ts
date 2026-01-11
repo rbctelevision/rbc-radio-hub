@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 // This function creates admin users - should only be run once
-// After running, you should delete this function for security
+// After running, this function should be DELETED for security
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -21,7 +21,7 @@ serve(async (req) => {
     
     if (!expectedKey || setupKey !== expectedKey) {
       return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
+        JSON.stringify({ error: "Unauthorized - invalid setup key" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -35,9 +35,17 @@ serve(async (req) => {
       },
     });
 
+    // Admin credentials passed through environment or request body
+    // For security, use environment variables instead of hardcoding
     const adminUsers = [
-      { email: "admin@rbctelevision.org", password: "pa##^ord" },
-      { email: "technology@rbctelevision.org", password: "Raa@RBC" },
+      { 
+        email: "admin@rbctelevision.org", 
+        password: Deno.env.get("ADMIN_PASSWORD_1") || "TempPass123!" 
+      },
+      { 
+        email: "technology@rbctelevision.org", 
+        password: Deno.env.get("ADMIN_PASSWORD_2") || "TempPass456!" 
+      },
     ];
 
     const results = [];
@@ -78,7 +86,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, results }),
+      JSON.stringify({ success: true, results, note: "DELETE THIS FUNCTION NOW for security!" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
