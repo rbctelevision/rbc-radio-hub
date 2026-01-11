@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.search-spotify]
 verify_jwt = false
+
+[functions.setup-admin]
+verify_jwt = false

@@ -6,6 +6,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Rate limit: 3 requests per 20 minutes
+const RATE_LIMIT_COUNT = 3;
+const RATE_LIMIT_MINUTES = 20;
+
 interface SongRequest {
   type: "song";
   name: string;
@@ -56,6 +60,44 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Check if IP is banned
+    const { data: isBanned } = await supabase
+      .rpc("is_ip_banned", { _ip_address: clientIP });
+
+    if (isBanned) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Your IP has been blocked from sending requests." 
+        }),
+        { 
+          status: 403, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+
+    // Check rate limit
+    const { data: recentCount } = await supabase
+      .rpc("count_recent_requests", { 
+        _ip_address: clientIP, 
+        _minutes: RATE_LIMIT_MINUTES 
+      });
+
+    if (recentCount !== null && recentCount >= RATE_LIMIT_COUNT) {
+      const remainingMinutes = RATE_LIMIT_MINUTES;
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Rate limit exceeded. You can only send ${RATE_LIMIT_COUNT} requests every ${RATE_LIMIT_MINUTES} minutes. Please try again later.` 
+        }),
+        { 
+          status: 429, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+
     // Build content summary for logging
     let contentSummary = "";
     if (payload.type === "song") {
@@ -76,7 +118,7 @@ serve(async (req) => {
     });
 
     // Build Discord embed based on request type
-    let embed: any;
+    let embed: Record<string, unknown>;
     const files: { name: string; blob: Blob }[] = [];
 
     if (payload.type === "song") {
@@ -89,10 +131,15 @@ serve(async (req) => {
           { name: "Artist", value: payload.songArtist, inline: true },
         ],
         thumbnail: payload.albumArt ? { url: payload.albumArt } : undefined,
+        footer: { text: `IP: ${clientIP}` },
         timestamp: new Date().toISOString(),
       };
       if (payload.comments) {
-        embed.fields.push({ name: "Additional Comments", value: payload.comments, inline: false });
+        (embed.fields as Array<{name: string; value: string; inline: boolean}>).push({ 
+          name: "Additional Comments", 
+          value: payload.comments, 
+          inline: false 
+        });
       }
     } else if (payload.type === "message") {
       embed = {
@@ -102,10 +149,15 @@ serve(async (req) => {
           { name: "From", value: payload.name, inline: true },
           { name: "Message", value: payload.message, inline: false },
         ],
+        footer: { text: `IP: ${clientIP}` },
         timestamp: new Date().toISOString(),
       };
       if (payload.comments) {
-        embed.fields.push({ name: "Additional Comments", value: payload.comments, inline: false });
+        (embed.fields as Array<{name: string; value: string; inline: boolean}>).push({ 
+          name: "Additional Comments", 
+          value: payload.comments, 
+          inline: false 
+        });
       }
     } else if (payload.type === "voice") {
       embed = {
@@ -114,10 +166,15 @@ serve(async (req) => {
         fields: [
           { name: "From", value: payload.name, inline: true },
         ],
+        footer: { text: `IP: ${clientIP}` },
         timestamp: new Date().toISOString(),
       };
       if (payload.comments) {
-        embed.fields.push({ name: "Additional Comments", value: payload.comments, inline: false });
+        (embed.fields as Array<{name: string; value: string; inline: boolean}>).push({ 
+          name: "Additional Comments", 
+          value: payload.comments, 
+          inline: false 
+        });
       }
 
       // Convert base64 to blob for voice memo
@@ -127,6 +184,8 @@ serve(async (req) => {
         name: `voice_memo_${Date.now()}.webm`, 
         blob: new Blob([binaryData], { type: "audio/webm" }) 
       });
+    } else {
+      throw new Error("Invalid request type");
     }
 
     // Send to Discord
