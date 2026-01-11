@@ -5,12 +5,59 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Rate limit: 30 requests per minute per IP
+const RATE_LIMIT_COUNT = 30;
+const RATE_LIMIT_MINUTES = 1;
+
+// In-memory rate limiting
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const windowMs = RATE_LIMIT_MINUTES * 60 * 1000;
+  
+  const entry = rateLimitMap.get(ip);
+  
+  if (!entry || now > entry.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + windowMs });
+    return { allowed: true, remaining: RATE_LIMIT_COUNT - 1 };
+  }
+  
+  if (entry.count >= RATE_LIMIT_COUNT) {
+    return { allowed: false, remaining: 0 };
+  }
+  
+  entry.count++;
+  return { allowed: true, remaining: RATE_LIMIT_COUNT - entry.count };
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Get client IP
+    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+                     req.headers.get("x-real-ip") ||
+                     "unknown";
+
+    // Check rate limit
+    const rateLimit = checkRateLimit(clientIP);
+    if (!rateLimit.allowed) {
+      return new Response(
+        JSON.stringify({ error: 'Rate limit exceeded. Please try again in a minute.' }),
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json',
+            'X-RateLimit-Remaining': '0'
+          } 
+        }
+      );
+    }
+
     const { start, end } = await req.json();
     const apiKey = Deno.env.get('AZURA_API_KEY');
 

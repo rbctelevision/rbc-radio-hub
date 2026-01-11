@@ -1,9 +1,46 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Rate limit: 30 searches per minute per IP
+const RATE_LIMIT_COUNT = 30;
+const RATE_LIMIT_MINUTES = 1;
+
+// In-memory rate limiting (resets on function cold start)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const windowMs = RATE_LIMIT_MINUTES * 60 * 1000;
+  
+  const entry = rateLimitMap.get(ip);
+  
+  if (!entry || now > entry.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + windowMs });
+    return { allowed: true, remaining: RATE_LIMIT_COUNT - 1 };
+  }
+  
+  if (entry.count >= RATE_LIMIT_COUNT) {
+    return { allowed: false, remaining: 0 };
+  }
+  
+  entry.count++;
+  return { allowed: true, remaining: RATE_LIMIT_COUNT - entry.count };
+}
+
+// Clean up old entries periodically
+function cleanupRateLimitMap() {
+  const now = Date.now();
+  for (const [ip, entry] of rateLimitMap.entries()) {
+    if (now > entry.resetTime) {
+      rateLimitMap.delete(ip);
+    }
+  }
+}
 
 interface SpotifyTrack {
   id: string;
@@ -44,6 +81,34 @@ serve(async (req) => {
   }
 
   try {
+    // Get client IP
+    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+                     req.headers.get("x-real-ip") ||
+                     "unknown";
+
+    // Check rate limit
+    const rateLimit = checkRateLimit(clientIP);
+    if (!rateLimit.allowed) {
+      // Cleanup old entries occasionally
+      cleanupRateLimitMap();
+      
+      return new Response(
+        JSON.stringify({ 
+          error: "Rate limit exceeded. Please try again in a minute.", 
+          tracks: [] 
+        }),
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            "Content-Type": "application/json",
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": String(RATE_LIMIT_MINUTES * 60)
+          } 
+        }
+      );
+    }
+
     const { query } = await req.json();
 
     if (!query || typeof query !== "string" || query.trim().length < 2) {
@@ -88,7 +153,13 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ tracks }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { 
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "application/json",
+          "X-RateLimit-Remaining": String(rateLimit.remaining)
+        } 
+      }
     );
   } catch (error: unknown) {
     console.error("Spotify search error:", error);
